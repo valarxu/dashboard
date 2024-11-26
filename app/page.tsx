@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { IoRefreshOutline } from 'react-icons/io5';
+import WalletMonitor from './components/WalletMonitor';
 
 interface KlineData {
   change: number;
@@ -440,7 +441,7 @@ export default function Home() {
         <div className="p-4 border-b border-gray-700">
           <h2 className="text-gray-200 text-xl font-medium">钱包监控</h2>
         </div>
-        {/* 这里可以添加钱包监控的组件 */}
+        <WalletMonitor />
       </div>
     </main>
   );
