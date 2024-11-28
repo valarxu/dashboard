@@ -3,6 +3,8 @@ export interface KlineData {
   volume: string;
   prevChange: number;
   prevVolume: string;
+  prevPrevChange: number;
+  prevPrevVolume: string;
 }
 
 export interface CoinData {
@@ -10,9 +12,7 @@ export interface CoinData {
   name: string;
   price: string;
   klines: {
-    '5m': KlineData;
     '15m': KlineData;
-    '1h': KlineData;
     '4h': KlineData;
     '24h': KlineData;
   };
@@ -25,4 +25,5 @@ export interface Alert {
   volumeChange: number;
   priceChange: number;
   timestamp: Date;
+  stage: 'current' | 'prev';
 } 

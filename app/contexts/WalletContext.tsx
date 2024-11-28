@@ -42,6 +42,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const wsRefs = useRef<Map<string, WebSocket>>(new Map());
   const processedSignatures = useRef<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<WalletNotification[]>([]);
+  const monitoringTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const MONITORING_TIMEOUT = 4 * 60 * 60 * 1000; // 4小时的监听时间限制
 
   // 初始化时从 IndexedDB 加载钱包
   useEffect(() => {
@@ -62,6 +64,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       wsRefs.current.forEach(ws => ws.close());
       wsRefs.current.clear();
       processedSignatures.current.clear();
+      // 清除所有定时器
+      monitoringTimers.current.forEach(timer => clearTimeout(timer));
+      monitoringTimers.current.clear();
     };
   }, []);
 
@@ -79,6 +84,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ws.onopen = () => {
         console.log(`WebSocket连接已建立: ${address}`);
         setMonitoringStatus(prev => ({ ...prev, [address]: true }));
+        
+        // 设置监听时间限制
+        const timer = setTimeout(() => {
+          console.log(`监听时间到期，自动关闭连接: ${address}`);
+          ws.close();
+          wsRefs.current.delete(address);
+          setMonitoringStatus(prev => ({ ...prev, [address]: false }));
+          monitoringTimers.current.delete(address);
+        }, MONITORING_TIMEOUT);
+
+        monitoringTimers.current.set(address, timer);
         
         const subscribeMessage = {
           jsonrpc: '2.0',
@@ -133,6 +149,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log(`WebSocket连接已关闭 (${address})`);
         wsRefs.current.delete(address);
         setMonitoringStatus(prev => ({ ...prev, [address]: false }));
+        
+        // 清除定时器
+        const timer = monitoringTimers.current.get(address);
+        if (timer) {
+          clearTimeout(timer);
+          monitoringTimers.current.delete(address);
+        }
       };
 
       wsRefs.current.set(address, ws);
@@ -201,6 +224,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ws.close();
         wsRefs.current.delete(address);
         setMonitoringStatus(prev => ({ ...prev, [address]: false }));
+        
+        // 清除定时器
+        const timer = monitoringTimers.current.get(address);
+        if (timer) {
+          clearTimeout(timer);
+          monitoringTimers.current.delete(address);
+        }
       }
     } else {
       // 开启监听
